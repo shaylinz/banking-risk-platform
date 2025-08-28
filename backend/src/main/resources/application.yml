@@ -1,8 +1,8 @@
-﻿spring:
+spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/bankdb
+    url: jdbc:postgresql://localhost:5433/bankdb
     username: bank
-    password: bankpass
+    password: CHANGEME
   jpa:
     hibernate:
       ddl-auto: validate
@@ -10,3 +10,6 @@
       hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
 server:
   port: 8080
+
+ml:
+  base-url: http://localhost:8000
