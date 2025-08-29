@@ -36,7 +36,18 @@ export default function Loan() {
         body: JSON.stringify(form),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      setResult(await res.json());
+      const result = await res.json();
+      setResult(result);
+      
+      // Trigger dashboard refresh by setting a storage event
+      localStorage.setItem('loanSubmitted', Date.now().toString());
+      
+      // Also trigger the event for the current window
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'loanSubmitted',
+        newValue: Date.now().toString()
+      }));
+      
     } catch (e) {
       setError(String(e));
     } finally {
@@ -59,6 +70,22 @@ export default function Loan() {
     } catch {
       alert("ML not reachable");
     }
+  };
+
+  const getFeatureDisplayName = (feature) => {
+    const featureMap = {
+      'RevolvingUtilizationOfUnsecuredLines': 'Revolving Utilization',
+      'NumberOfTime30_59DaysPastDueNotWorse': '30-59 Days Past Due',
+      'NumberOfTime60_89DaysPastDueNotWorse': '60-89 Days Past Due',
+      'NumberOfTimes90DaysLate': '90+ Days Late',
+      'NumberOfOpenCreditLinesAndLoans': 'Open Credit Lines',
+      'NumberRealEstateLoansOrLines': 'Real Estate Loans',
+      'NumberOfDependents': 'Dependents',
+      'age': 'Age',
+      'DebtRatio': 'Debt Ratio',
+      'MonthlyIncome': 'Monthly Income'
+    };
+    return featureMap[feature] || feature;
   };
 
   const Field = ({ name, label, step = "any", min, max }) => (
@@ -140,12 +167,31 @@ export default function Loan() {
 
           {Array.isArray(result.top_factors) && result.top_factors.length > 0 && (
             <div className="mt-3">
-              <div className="font-medium mb-1">Top Factors</div>
-              <ul className="list-disc ml-6">
-                {result.top_factors.map((f, i) => (
-                  <li key={i}>{String(f)}</li>
-                ))}
-              </ul>
+              <div className="font-medium mb-2">Top Factors</div>
+              <div className="space-y-1">
+                {result.top_factors.map((factor, i) => {
+                  if (Array.isArray(factor) && factor.length >= 2) {
+                    const [feature, value] = factor;
+                    const impact = Number(value) > 0 ? 'positive' : 'negative';
+                    const displayName = getFeatureDisplayName(feature);
+                    return (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <span className="text-slate-600">{displayName}</span>
+                        <span className={`font-mono font-medium ${
+                          impact === 'positive' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {Number(value).toFixed(4)}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={i} className="text-sm text-slate-600">
+                      {String(factor)}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

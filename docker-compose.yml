@@ -6,9 +6,14 @@
       POSTGRES_USER: bank
       POSTGRES_PASSWORD: bankpass
     ports:
-      - "5433:5432"        # host:container
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:                 # <- add this block
+      test: ["CMD-SHELL", "pg_isready -U bank -d bankdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   ml:
     build:
@@ -16,27 +21,33 @@
     ports:
       - "8000:8000"
     healthcheck:
-      test: ["CMD","curl","-f","http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
       retries: 5
 
   backend:
     build:
       context: ./backend
-    depends_on:
-      - db
-      - ml
+    depends_on:                  # <- change to health-based depends_on
+      db:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
-      # talk to Postgres container (service name is "db")
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/bankdb
       SPRING_DATASOURCE_USERNAME: bank
       SPRING_DATASOURCE_PASSWORD: bankpass
-      # create/update tables automatically in this dev stack
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      # talk to ML container (service name is "ml")
       ML_BASE_URL: http://ml:8000
+      # Snowflake configuration (update with your actual values)
+      SNOWFLAKE_URL: jdbc:snowflake://uinmrec-gp26051.snowflakecomputing.com
+      SNOWFLAKE_USERNAME: SHAYLINZ
+      SNOWFLAKE_PASSWORD: Nim@219121912191
+      SNOWFLAKE_DATABASE: BKRISK_DB
+      SNOWFLAKE_SCHEMA: CORE
+      SNOWFLAKE_WAREHOUSE: COMPUTE_WH
 
 volumes:
   pgdata:

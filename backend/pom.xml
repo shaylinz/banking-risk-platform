@@ -76,6 +76,12 @@
 		<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
+		<!-- Snowflake JDBC Driver -->
+		<dependency>
+			<groupId>net.snowflake</groupId>
+			<artifactId>snowflake-jdbc</artifactId>
+			<version>3.14.4</version>
+		</dependency>
 
 	</dependencies>
 
